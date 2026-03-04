@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ViaDecide Prompt Generator</title>
+
+<!-- ═══════════════════════════════════════════════════
+     VIADECIDE GLOBAL UX PATCH
+═══════════════════════════════════════════════════ -->
+<style>
+/* 1. Tap highlight kill */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* 2. Selection lock — allow exceptions */
+*, *::before, *::after { user-select: none; -webkit-user-select: none; }
+input, textarea, [contenteditable="true"], pre, code, .allow-select {
+  user-select: text; -webkit-user-select: text;
+}
+
+/* 3. Outline only for keyboard, never for mouse */
+*:focus { outline: none; }
+*:focus-visible { outline: 2px solid #7ee8fa; outline-offset: 2px; border-radius: 3px; }
+
+/* 4. Selection colour */
+::selection { background: #7ee8fa33; color: #e0f7ff; }
+
+/* ─── ROOT + RESET ─────────────────────────── */
+:root {
+  --bg:        #0d0f14;
+  --bg2:       #13161e;
+  --bg3:       #1a1e2a;
+  --border:    #252a38;
+  --border2:   #2e3448;
+  --accent:    #7ee8fa;
+  --accent2:   #5bc4f5;
+  --accent3:   #a78bfa;
+  --green:     #4ade80;
+  --amber:     #fbbf24;
+  --text:      #d4ddf7;
+  --text2:     #7c89a8;
+  --text3:     #4a5470;
+  --font-mono: 'Courier New', monospace;
+  --radius:    8px;
+  --radius2:   12px;
+  --shadow:    0 4px 24px rgba(0,0,0,.45);
+}
+
+html, body { margin:0; padding:0; background:var(--bg); color:var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif; font-size:14px;
+  line-height:1.6; min-height:100vh;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ─── TOPBAR ────────────────────────────────── */
+#topbar {
+  position: sticky; top:0; z-index:100;
+  background: rgba(13,15,20,.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items:center; gap:14px;
+}
+#topbar .logo {
+  font-size:11px; font-weight:700; letter-spacing:.18em;
+  color: var(--accent); text-transform:uppercase;
+  border: 1px solid var(--accent); border-radius:4px;
+  padding: 2px 8px; white-space:nowrap;
+}
+#topbar h1 { margin:0; font-size:15px; font-weight:600; color:#e8eeff; }
+#topbar p  { margin:0; font-size:11px; color:var(--text2); }
+.topbar-text { flex:1; min-width:0; }
+.topbar-actions { display:flex; gap:8px; flex-shrink:0; }
+
+/* ─── LAYOUT ────────────────────────────────── */
+#app {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 57px);
+}
+#panel-left {
+  border-right: 1px solid var(--border);
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(100vh - 57px);
+  position: sticky; top: 57px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+#panel-right {
+  padding: 24px;
+  display: flex; flex-direction:column; gap:20px;
+  overflow-y:auto;
+  max-height: calc(100vh - 57px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+/* ─── FORM SECTIONS ─────────────────────────── */
+.section {
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  overflow: hidden;
+}
+.section-head {
+  background: var(--bg3);
+  padding: 9px 14px;
+  font-size: 10px; font-weight:700; letter-spacing:.12em;
+  text-transform: uppercase; color: var(--accent2);
+  border-bottom: 1px solid var(--border);
+  display:flex; align-items:center; gap:7px;
+}
+.section-body { padding: 14px; display:flex; flex-direction:column; gap:11px; }
+
+/* ─── FORM ELEMENTS ─────────────────────────── */
+label { display:block; font-size:11px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+input[type=text], textarea, select {
+  width:100%; background:var(--bg3); border:1px solid var(--border2);
+  color:var(--text); border-radius:var(--radius); padding:7px 10px;
+  font-size:13px; font-family:inherit; transition:border-color .15s;
+}
+input[type=text]:focus, textarea:focus, select:focus {
+  border-color: var(--accent); background: #13161e;
+}
+textarea { resize:vertical; min-height:72px; }
+select option { background:var(--bg2); }
+
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+
+/* checkbox grid */
+.cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.cb-item { display:flex; align-items:center; gap:7px; cursor:pointer;
+  padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius);
+  background:var(--bg3); transition:border-color .15s; font-size:12px; color:var(--text);
+}
+.cb-item:hover { border-color: var(--border2); }
+.cb-item input[type=checkbox] { accent-color:var(--accent); width:14px; height:14px; flex-shrink:0; }
+.cb-item.checked { border-color: var(--accent3); background:#1a1630; }
+
+/* ─── BUTTONS ───────────────────────────────── */
+.btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 8px 16px; border-radius:var(--radius); border:1px solid transparent;
+  font-size:12px; font-weight:600; letter-spacing:.04em;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg,#1a3a4a,#1a2a40);
+  border-color: var(--accent); color:var(--accent);
+}
+.btn-primary:hover { background:#1a3a5a; box-shadow:0 0 12px rgba(126,232,250,.2); }
+.btn-ghost {
+  background:transparent; border-color:var(--border2); color:var(--text2);
+}
+.btn-ghost:hover { border-color:var(--text2); color:var(--text); }
+.btn-green { border-color:var(--green); color:var(--green); background:rgba(74,222,128,.05); }
+.btn-green:hover { background:rgba(74,222,128,.12); }
+.btn-amber { border-color:var(--amber); color:var(--amber); background:rgba(251,191,36,.05); }
+.btn-amber:hover { background:rgba(251,191,36,.12); }
+.btn-danger { border-color:#f87171; color:#f87171; background:rgba(248,113,113,.05); }
+.btn-danger:hover { background:rgba(248,113,113,.12); }
+.btn-lg { padding:10px 22px; font-size:13px; }
+.btn-sm { padding:5px 10px; font-size:11px; }
+
+/* ─── GENERATE BAR ──────────────────────────── */
+#gen-bar {
+  position:sticky; bottom:0;
+  background:rgba(13,15,20,.95);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  padding:12px 24px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin: 0 -24px -24px;
+}
+
+/* ─── OUTPUT PANELS ─────────────────────────── */
+.output-panel {
+  border:1px solid var(--border2);
+  border-radius:var(--radius2);
+  overflow:hidden;
+  flex:1;
+}
+.output-head {
+  background:var(--bg3);
+  padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.output-label {
+  font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; flex:1;
+}
+.output-label.a { color:var(--accent); }
+.output-label.b { color:var(--accent3); }
+.output-actions { display:flex; gap:6px; }
+.output-body {
+  padding:14px;
+  font-family: var(--font-mono);
+  font-size:12px; line-height:1.7;
+  white-space:pre-wrap; word-break:break-word;
+  color:#b8c8e8;
+  background:var(--bg2);
+  min-height:200px; max-height:420px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.output-body.placeholder { color:var(--text3); font-family:inherit; font-size:12px; }
+
+/* ─── STATUS BADGE ──────────────────────────── */
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:700; letter-spacing:.08em;
+  padding:2px 7px; border-radius:20px;
+  text-transform:uppercase;
+}
+.badge-live   { background:rgba(74,222,128,.12); color:var(--green); border:1px solid rgba(74,222,128,.3); }
+.badge-beta   { background:rgba(251,191,36,.1); color:var(--amber); border:1px solid rgba(251,191,36,.3); }
+.badge-coming { background:rgba(126,232,250,.08); color:var(--accent2); border:1px solid rgba(126,232,250,.2); }
+
+/* ─── TOAST ─────────────────────────────────── */
+#toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  padding:10px 18px; border-radius:var(--radius);
+  background:var(--bg3); border:1px solid var(--green);
+  color:var(--green); font-size:12px; font-weight:600;
+  opacity:0; transform:translateY(8px);
+  transition:all .2s; pointer-events:none;
+}
+#toast.show { opacity:1; transform:translateY(0); }
+
+/* ─── RIGHT COLUMN HEADER ───────────────────── */
+.right-header {
+  display:flex; align-items:center; gap:12px; padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:4px;
+}
+.right-header h2 { margin:0; font-size:13px; font-weight:600; color:var(--text); }
+.right-header p  { margin:0; font-size:11px; color:var(--text2); }
+
+/* ─── RESPONSIVE ─────────────────────────────── */
+@media(max-width:900px){
+  #app { grid-template-columns:1fr; }
+  #panel-left { position:static; max-height:none; border-right:none;
+    border-bottom:1px solid var(--border); }
+  #panel-right { max-height:none; }
+  #gen-bar { margin:0 -24px -24px; }
+  .row3 { grid-template-columns:1fr 1fr; }
+}
+@media(max-width:560px){
+  #topbar { padding:10px 16px; }
+  #panel-left, #panel-right { padding:16px; }
+  .row2, .row3 { grid-template-columns:1fr; }
+  .cb-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══ -->
+<div id="topbar">
+  <div class="logo">ViaDecide</div>
+  <div class="topbar-text">
+    <h1>Prompt Generator</h1>
+    <p>Generate Claude prompt + main website integration snippet.</p>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" id="btn-example">⚡ Load Example</button>
+    <button class="btn btn-danger btn-sm" id="btn-reset">✕ Reset</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+
+  <!-- ─── LEFT: FORM ─── -->
+  <div id="panel-left">
+
+    <!-- A: Tool Basics -->
+    <div class="section">
+      <div class="section-head">🔧 A — Tool Basics</div>
+      <div class="section-body">
+        <div>
+          <label for="f-name">Tool Name *</label>
+          <input type="text" id="f-name" placeholder="e.g. Opportunity Radar" autocomplete="off"/>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="f-slug">Slug (auto)</label>
+            <input type="text" id="f-slug" placeholder="opportunity-radar" autocomplete="off"/>
+          </div>
+          <div>
+            <label for="f-file">File Name (auto)</label>
+            <input type="text" id="f-file" placeholder="opportunity-radar.html" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="f-cat">Category</label>
+            <select id="f-cat">
+              <option value="tools">tools</option>
+              <option value="finance">finance</option>
+              <option value="commerce">commerce</option>
+              <option value="games">games</option>
+              <option value="services">services</option>
+              <option value="store">store</option>
+              <option value="blog">blog</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-icon">Icon (emoji)</label>
+            <input type="text" id="f-icon" placeholder="📌" maxlength="4" autocomplete="off"/>
+          </div>
+        </div>
+        <div>
+          <label for="f-tagline">One-line Tagline</label>
+          <input type="text" id="f-tagline" placeholder="Find hidden opportunities around a decision." autocomplete="off"/>
+        </div>
+        <div>
+          <label for="f-purpose">Purpose</label>
+          <textarea id="f-purpose" placeholder="Describe what this tool does and why it exists..."></textarea>
+        </div>
+        <div>
+          <label for="f-user">Target User</label>
+          <input type="text" id="f-user" placeholder="e.g. startup founders, students, freelancers" autocomplete="off"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- B: Inputs / Outputs -->
+    <div class="section">
+      <div class="section-head">📥 B — Inputs / Outputs</div>
+      <div class="section-body">
+        <div>
+          <label for="f-inputs">User Inputs (one per line)</label>
+          <textarea id="f-inputs" placeholder="Industry&#10;City&#10;Skill&#10;Capital" style="min-height:90px;"></textarea>
+        </div>
+        <div>
+          <label for="f-outputs">Tool Outputs (one per line)</label>
+          <textarea id="f-outputs" placeholder="3 overlooked opportunities&#10;2 risky paths&#10;1 asymmetric bet" style="min-height:90px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- C: Style / Language / Tone -->
+    <div class="section">
+      <div class="section-head">🎨 C — Style / Language / Tone</div>
+      <div class="section-body">
+        <div class="row3">
+          <div>
+            <label for="f-style">Visual Style</label>
+            <select id="f-style">
+              <option value="ViaDecide Dark">ViaDecide Dark</option>
+              <option value="Retro Terminal">Retro Terminal</option>
+              <option value="Minimal Spreadsheet">Minimal Spreadsheet</option>
+              <option value="Neon">Neon</option>
+              <option value="Bharat Ledger">Bharat Ledger</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-lang">Language</label>
+            <select id="f-lang">
+              <option value="English">English</option>
+              <option value="Hindi">Hindi</option>
+              <option value="Bilingual">Bilingual (EN/HI)</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-tone">Tone</label>
+            <select id="f-tone">
+              <option value="strict">strict</option>
+              <option value="friendly">friendly</option>
+              <option value="premium">premium</option>
+              <option value="playful">playful</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D: Features -->
+    <div class="section">
+      <div class="section-head">✅ D — Features</div>
+      <div class="section-body">
+        <div class="cb-grid" id="features-grid">
+          <label class="cb-item" data-key="localStorage">
+            <input type="checkbox" value="localStorage"/> 💾 localStorage
+          </label>
+          <label class="cb-item" data-key="exportTXT">
+            <input type="checkbox" value="exportTXT"/> 📄 Export TXT
+          </label>
+          <label class="cb-item" data-key="exportCSV">
+            <input type="checkbox" value="exportCSV"/> 📊 Export CSV
+          </label>
+          <label class="cb-item" data-key="charts">
+            <input type="checkbox" value="charts"/> 📈 Charts (no libs)
+          </label>
+          <label class="cb-item" data-key="pivotTable">
+            <input type="checkbox" value="pivotTable"/> 🔄 Pivot Summary Table
+          </label>
+          <label class="cb-item" data-key="filters">
+            <input type="checkbox" value="filters"/> 🔍 Filters / Slicers
+          </label>
+          <label class="cb-item" data-key="commandOrb">
+            <input type="checkbox" value="commandOrb"/> 🔮 Command Orb Input
+          </label>
+          <label class="cb-item" data-key="a11y">
+            <input type="checkbox" value="a11y"/> ♿ Clickable Cards A11y
+          </label>
+          <label class="cb-item" data-key="offline">
+            <input type="checkbox" value="offline"/> 📡 Offline-Ready Note
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- E: Prompt Options -->
+    <div class="section">
+      <div class="section-head">⚙️ E — Prompt Options</div>
+      <div class="section-body">
+        <div class="cb-grid">
+          <label class="cb-item" id="opt-consistent-wrap">
+            <input type="checkbox" id="opt-consistent" checked/> 🔒 Keep UI consistent
+          </label>
+          <label class="cb-item" id="opt-mobile-wrap">
+            <input type="checkbox" id="opt-mobile" checked/> 📱 Mobile-first
+          </label>
+        </div>
+        <div>
+          <label for="f-status">Card Status Badge</label>
+          <select id="f-status">
+            <option value="Live">Live</option>
+            <option value="Beta">Beta</option>
+            <option value="Coming Soon">Coming Soon</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-intent">Extra Intent Keywords (comma-sep, optional)</label>
+          <input type="text" id="f-intent" placeholder="e.g. radar, scan, shortlist" autocomplete="off"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERATE BAR -->
+    <div id="gen-bar">
+      <button class="btn btn-primary btn-lg" id="btn-generate">⚡ Generate Outputs</button>
+      <span id="gen-status" style="font-size:11px;color:var(--text3);"></span>
+    </div>
+
+  </div><!-- /panel-left -->
+
+  <!-- ─── RIGHT: OUTPUTS ─── -->
+  <div id="panel-right">
+
+    <div class="right-header">
+      <div>
+        <h2>Generated Outputs</h2>
+        <p>Fill the form and click Generate.</p>
+      </div>
+    </div>
+
+    <!-- OUTPUT A -->
+    <div class="output-panel">
+      <div class="output-head">
+        <div class="output-label a">⚡ Output A — Claude Tool-Build Prompt</div>
+        <div class="output-actions">
+          <button class="btn btn-ghost btn-sm" id="copy-a" disabled>📋 Copy</button>
+          <button class="btn btn-ghost btn-sm" id="dl-a" disabled>⬇ Download</button>
+        </div>
+      </div>
+      <div class="output-body placeholder allow-select" id="out-a">Fill the form and click Generate to see the Claude prompt here.</div>
+    </div>
+
+    <!-- OUTPUT B -->
+    <div class="output-panel">
+      <div class="output-head">
+        <div class="output-label b">🧩 Output B — Website Integration Snippet</div>
+        <div class="output-actions">
+          <button class="btn btn-ghost btn-sm" id="copy-b" disabled>📋 Copy</button>
+          <button class="btn btn-ghost btn-sm" id="dl-b" disabled>⬇ Download</button>
+        </div>
+      </div>
+      <div class="output-body placeholder allow-select" id="out-b">Fill the form and click Generate to see the integration snippet here.</div>
+    </div>
+
+  </div><!-- /panel-right -->
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     iOS TOUCH POLISH SCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+(function(){
+  // Prevent outline flash on touch without blocking scroll
+  let touchActive = false;
+  document.addEventListener('touchstart', function(e){
+    touchActive = true;
+    // Remove focus from previously focused element to prevent lingering outline
+    if(document.activeElement && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+      document.activeElement.blur();
+    }
+  }, {passive:true});
+  document.addEventListener('touchend', function(){
+    setTimeout(function(){ touchActive = false; }, 300);
+  }, {passive:true});
+  // Suppress focus outline on touch-triggered focus
+  document.addEventListener('focusin', function(e){
+    if(touchActive){
+      e.target.setAttribute('data-touch-focus','1');
+    } else {
+      e.target.removeAttribute('data-touch-focus');
+    }
+  });
+  // Dynamic style: suppress :focus-visible for touch-focused elements
+  var s = document.createElement('style');
+  s.textContent = '[data-touch-focus]:focus-visible{outline:none!important;}';
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN APP LOGIC
+═══════════════════════════════════════════════════ -->
+<script>
+/* ── helpers ── */
+function toast(msg, dur=2000){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>t.classList.remove('show'),dur);
+}
+function slugify(s){
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function getChecked(){
+  return Array.from(document.querySelectorAll('#features-grid input:checked')).map(x=>x.value);
+}
+function gv(id){ return document.getElementById(id).value.trim(); }
+function setV(id,v){ document.getElementById(id).value=v; }
+
+/* ── checkbox active styling ── */
+document.querySelectorAll('.cb-item input[type=checkbox]').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    cb.closest('.cb-item').classList.toggle('checked',cb.checked);
+  });
+});
+// sync opt checkboxes
+['opt-consistent','opt-mobile'].forEach(id=>{
+  var el = document.getElementById(id);
+  var wrap = document.getElementById(id+'-wrap');
+  el.addEventListener('change',()=>wrap.classList.toggle('checked',el.checked));
+  if(el.checked) wrap.classList.add('checked');
+});
+
+/* ── Live slug / filename ── */
+var manualSlug=false, manualFile=false;
+document.getElementById('f-name').addEventListener('input',function(){
+  var s=slugify(this.value);
+  if(!manualSlug){ setV('f-slug',s); }
+  if(!manualSlug && !manualFile){ setV('f-file',s?s+'.html':''); }
+  autoSave();
+});
+document.getElementById('f-slug').addEventListener('input',function(){
+  manualSlug=true;
+  if(!manualFile) setV('f-file',this.value?this.value+'.html':'');
+  autoSave();
+});
+document.getElementById('f-file').addEventListener('input',function(){
+  manualFile=true; autoSave();
+});
+
+/* ── Auto-save to localStorage ── */
+var FIELDS=['f-name','f-slug','f-file','f-cat','f-icon','f-tagline','f-purpose','f-user',
+  'f-inputs','f-outputs','f-style','f-lang','f-tone','f-status','f-intent'];
+var CB_FEATS=['localStorage','exportTXT','exportCSV','charts','pivotTable','filters','commandOrb','a11y','offline'];
+var OPTS=['opt-consistent','opt-mobile'];
+
+function autoSave(){
+  var d={};
+  FIELDS.forEach(id=>d[id]=gv(id));
+  CB_FEATS.forEach(k=>{
+    var el=document.querySelector('#features-grid input[value="'+k+'"]');
+    d['feat_'+k]=el?el.checked:false;
+  });
+  OPTS.forEach(id=>d[id]=document.getElementById(id).checked);
+  d['manualSlug']=manualSlug; d['manualFile']=manualFile;
+  try{ localStorage.setItem('vd_promptgen',JSON.stringify(d)); }catch(e){}
+}
+
+function autoLoad(){
+  try{
+    var raw=localStorage.getItem('vd_promptgen');
+    if(!raw) return;
+    var d=JSON.parse(raw);
+    FIELDS.forEach(id=>{ if(d[id]!==undefined) setV(id,d[id]); });
+    CB_FEATS.forEach(k=>{
+      var el=document.querySelector('#features-grid input[value="'+k+'"]');
+      if(el && d['feat_'+k]!==undefined){
+        el.checked=d['feat_'+k];
+        el.closest('.cb-item').classList.toggle('checked',d['feat_'+k]);
+      }
+    });
+    OPTS.forEach(id=>{
+      var el=document.getElementById(id);
+      if(el && d[id]!==undefined){
+        el.checked=d[id];
+        el.closest('.cb-item').classList.toggle('checked',d[id]);
+      }
+    });
+    if(d['manualSlug']!==undefined) manualSlug=d['manualSlug'];
+    if(d['manualFile']!==undefined) manualFile=d['manualFile'];
+  }catch(e){}
+}
+
+FIELDS.forEach(id=>document.getElementById(id).addEventListener('input',autoSave));
+
+/* ── Load Example ── */
+document.getElementById('btn-example').addEventListener('click',function(){
+  manualSlug=false; manualFile=false;
+  setV('f-name','Opportunity Radar');
+  setV('f-slug','opportunity-radar');
+  setV('f-file','opportunity-radar.html');
+  setV('f-cat','tools');
+  setV('f-icon','📡');
+  setV('f-tagline','Find hidden opportunities around a decision.');
+  setV('f-purpose','User enters industry, city, skill, capital. Tool outputs overlooked opportunities, risky paths, and asymmetric bets. Helps founders and freelancers discover non-obvious paths forward.');
+  setV('f-user','Startup founders, freelancers, career-switchers');
+  setV('f-inputs','Industry\nCity\nSkill\nCapital');
+  setV('f-outputs','3 overlooked opportunities\n2 risky paths\n1 asymmetric bet');
+  setV('f-style','ViaDecide Dark');
+  setV('f-lang','English');
+  setV('f-tone','strict');
+  setV('f-status','Live');
+  setV('f-intent','radar, scan, opportunity, gap, blind spot');
+  // set features
+  var feats=['localStorage','exportTXT','commandOrb'];
+  CB_FEATS.forEach(k=>{
+    var el=document.querySelector('#features-grid input[value="'+k+'"]');
+    if(el){ el.checked=feats.includes(k); el.closest('.cb-item').classList.toggle('checked',feats.includes(k)); }
+  });
+  document.getElementById('opt-consistent').checked=true;
+  document.getElementById('opt-consistent-wrap').classList.add('checked');
+  document.getElementById('opt-mobile').checked=true;
+  document.getElementById('opt-mobile-wrap').classList.add('checked');
+  autoSave();
+  toast('✅ Example loaded!');
+});
+
+/* ── Reset ── */
+document.getElementById('btn-reset').addEventListener('click',function(){
+  if(!confirm('Reset all fields and clear saved data?')) return;
+  FIELDS.forEach(id=>setV(id,''));
+  CB_FEATS.forEach(k=>{
+    var el=document.querySelector('#features-grid input[value="'+k+'"]');
+    if(el){ el.checked=false; el.closest('.cb-item').classList.remove('checked'); }
+  });
+  OPTS.forEach(id=>{
+    var el=document.getElementById(id);
+    el.checked=id==='opt-consistent'||id==='opt-mobile';
+    el.closest('.cb-item').classList.toggle('checked',el.checked);
+  });
+  setV('f-icon','📌'); setV('f-status','Live');
+  manualSlug=false; manualFile=false;
+  try{ localStorage.removeItem('vd_promptgen'); }catch(e){}
+  var outA=document.getElementById('out-a');
+  var outB=document.getElementById('out-b');
+  outA.textContent='Fill the form and click Generate to see the Claude prompt here.';
+  outA.classList.add('placeholder');
+  outB.textContent='Fill the form and click Generate to see the integration snippet here.';
+  outB.classList.add('placeholder');
+  document.getElementById('copy-a').disabled=true;
+  document.getElementById('copy-b').disabled=true;
+  document.getElementById('dl-a').disabled=true;
+  document.getElementById('dl-b').disabled=true;
+  document.getElementById('gen-status').textContent='';
+  toast('🗑 Cleared!');
+});
+
+/* ════════════════════════════════════════════
+   GENERATE
+════════════════════════════════════════════ */
+document.getElementById('btn-generate').addEventListener('click',generate);
+
+function generate(){
+  var name      = gv('f-name');
+  var slug      = gv('f-slug') || slugify(name);
+  var fileName  = gv('f-file') || (slug+'.html');
+  var cat       = gv('f-cat');
+  var icon      = gv('f-icon') || '📌';
+  var tagline   = gv('f-tagline');
+  var purpose   = gv('f-purpose');
+  var targetUser= gv('f-user');
+  var inputs    = gv('f-inputs');
+  var outputs   = gv('f-outputs');
+  var style     = gv('f-style');
+  var lang      = gv('f-lang');
+  var tone      = gv('f-tone');
+  var status    = gv('f-status');
+  var extraIntent=gv('f-intent');
+  var feats     = getChecked();
+  var keepUI    = document.getElementById('opt-consistent').checked;
+  var mobile    = document.getElementById('opt-mobile').checked;
+
+  if(!name){ toast('⚠ Tool Name is required.'); return; }
+
+  var outA = buildPromptA({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,keepUI,mobile});
+  var outB = buildSnippetB({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,status,extraIntent});
+
+  var elA = document.getElementById('out-a');
+  var elB = document.getElementById('out-b');
+  elA.textContent = outA; elA.classList.remove('placeholder');
+  elB.textContent = outB; elB.classList.remove('placeholder');
+
+  document.getElementById('copy-a').disabled=false;
+  document.getElementById('copy-b').disabled=false;
+  document.getElementById('dl-a').disabled=false;
+  document.getElementById('dl-b').disabled=false;
+  document.getElementById('gen-status').textContent='✅ Generated at '+new Date().toLocaleTimeString();
+
+  // stash for download
+  window._vd_gen = { slug, outA, outB };
+  toast('⚡ Outputs generated!');
+}
+
+/* ──────────────────────────────────────────
+   BUILD OUTPUT A: CLAUDE PROMPT
+────────────────────────────────────────── */
+function buildPromptA(p){
+  var featLines = p.feats.map(f=>featLabel(f));
+  var featStr = featLines.length ? featLines.map(x=>'  - '+x).join('\n') : '  (none selected)';
+  var inputLines = p.inputs ? p.inputs.split('\n').filter(Boolean).map(x=>'  - '+x).join('\n') : '  (not specified)';
+  var outputLines = p.outputs ? p.outputs.split('\n').filter(Boolean).map(x=>'  - '+x).join('\n') : '  (not specified)';
+
+  var bilingual = p.lang==='Bilingual';
+  var hasCharts = p.feats.includes('charts');
+  var hasPivot  = p.feats.includes('pivotTable');
+  var hasOrb    = p.feats.includes('commandOrb');
+  var hasLocal  = p.feats.includes('localStorage');
+  var hasTXT    = p.feats.includes('exportTXT');
+  var hasCSV    = p.feats.includes('exportCSV');
+  var hasA11y   = p.feats.includes('a11y');
+  var hasFilters= p.feats.includes('filters');
+  var hasOffline= p.feats.includes('offline');
+
+  var designPhilosophy = styleGuide(p.style, p.tone);
+
+  var prompt = `Return ONE complete working HTML file only.
+No explanations. No partial code. No markdown fences.
+No external libraries. No CDN links. No <script src="">. No <link rel="stylesheet" href="">.
+Everything must be self-contained in a single .html file.
+
+────────────────────────────────────────────────────
+TOOL NAME
+────────────────────────────────────────────────────
+${p.name}
+${p.tagline ? '  Tagline: "'+p.tagline+'"' : ''}
+
+────────────────────────────────────────────────────
+FILE NAME
+────────────────────────────────────────────────────
+${p.fileName}
+
+────────────────────────────────────────────────────
+PURPOSE
+────────────────────────────────────────────────────
+${p.purpose || '(not specified)'}
+
+────────────────────────────────────────────────────
+TARGET USER
+────────────────────────────────────────────────────
+${p.targetUser || '(not specified)'}
+
+────────────────────────────────────────────────────
+USER INPUTS
+────────────────────────────────────────────────────
+${inputLines}${bilingual ? '\n\n  NOTE: Show bilingual labels. Each label must display both English and Hindi.\n  Examples: "Industry / उद्योग", "City / शहर", "Skill / कौशल"\n  Placeholders must also be bilingual where applicable.' : ''}
+
+────────────────────────────────────────────────────
+TOOL OUTPUTS
+────────────────────────────────────────────────────
+${outputLines}
+
+────────────────────────────────────────────────────
+DESIGN PHILOSOPHY
+────────────────────────────────────────────────────
+Visual Style: ${p.style}
+Language:     ${p.lang}
+Tone:         ${p.tone}
+${p.keepUI ? 'Keep UI/UX consistent with ViaDecide design system. Do NOT redesign unless strictly required.\n' : ''}${p.mobile ? 'Mobile-first layout. All elements must be usable on a 360px-wide screen.\n' : ''}
+${designPhilosophy}
+
+────────────────────────────────────────────────────
+MANDATORY GLOBAL UX PATCH
+────────────────────────────────────────────────────
+Include this CSS block near the top of <style>:
+
+  /* ViaDecide UX Patch */
+  * { -webkit-tap-highlight-color: transparent; }
+  *, *::before, *::after { user-select: none; -webkit-user-select: none; }
+  input, textarea, [contenteditable="true"], pre, code, .allow-select {
+    user-select: text; -webkit-user-select: text;
+  }
+  *:focus { outline: none; }
+  *:focus-visible { outline: 2px solid #7ee8fa; outline-offset: 2px; border-radius: 3px; }
+  ::selection { background: #7ee8fa33; color: #e0f7ff; }
+
+────────────────────────────────────────────────────
+MANDATORY TOUCH POLISH SCRIPT
+────────────────────────────────────────────────────
+Include this JS block (do NOT use heavy preventDefault, do NOT block scrolling):
+
+  (function(){
+    var touchActive=false;
+    document.addEventListener('touchstart',function(e){
+      touchActive=true;
+      if(document.activeElement&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+        document.activeElement.blur();
+      }
+    },{passive:true});
+    document.addEventListener('touchend',function(){
+      setTimeout(function(){touchActive=false;},300);
+    },{passive:true});
+    document.addEventListener('focusin',function(e){
+      if(touchActive) e.target.setAttribute('data-touch-focus','1');
+      else e.target.removeAttribute('data-touch-focus');
+    });
+    var s=document.createElement('style');
+    s.textContent='[data-touch-focus]:focus-visible{outline:none!important;}';
+    document.head.appendChild(s);
+  })();
+
+────────────────────────────────────────────────────
+ACCESSIBILITY
+────────────────────────────────────────────────────
+${hasA11y ? `All clickable <div> and non-button interactive elements MUST have:
+  - role="button"
+  - tabindex="0"
+  - aria-label describing the action
+  - onkeydown handler: if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click();}
+  
+  Example:
+  <div class="card" role="button" tabindex="0" aria-label="View details"
+    onclick="handleCard(this)"
+    onkeydown="if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}">
+  </div>` : `Standard semantic HTML accessibility (button, label for/id pairs, aria-label on icon buttons).
+All form elements must have proper labels.`}
+
+────────────────────────────────────────────────────
+LAYOUT
+────────────────────────────────────────────────────
+${p.mobile ? '- Mobile-first: base styles target 360px+, wider layouts added via min-width media queries.\n' : ''}- Two-region layout: input section (left/top) + output section (right/bottom).
+- Sticky "Generate" / "Calculate" button bar at bottom of input section.
+- Outputs displayed as cards or structured result blocks.
+${hasFilters ? '- Include filter chips / slicer-style toggles above result area.' : ''}
+
+────────────────────────────────────────────────────
+LOGIC ENGINE
+────────────────────────────────────────────────────
+- Pure vanilla JS. No frameworks. No libraries.
+- Collect all form inputs on submit.
+- Validate required fields; show inline error messages.
+- Compute/generate outputs based on the purpose above.
+- Render results into the DOM without page reload.
+${hasOrb ? `\nCOMMAND ORB INPUT:
+  Include a special command input at the top of the tool.
+  User can type natural-language style keywords to trigger tool actions.
+  Examples: "reset", "export", "generate", "clear", "<section-name>"
+  Route keywords to appropriate handler functions.
+  Style as a pill-shaped search bar with an orb icon (🔮 or ◉).
+  Provide visual keyword hints below the orb input.` : ''}
+
+────────────────────────────────────────────────────
+DATA MODEL
+────────────────────────────────────────────────────
+${hasLocal ? `Use localStorage for persistence:
+  - Save all user inputs on every change (debounced 400ms).
+  - Load saved data on page load (graceful fallback if empty).
+  - Key naming: "${p.slug}_<field>" or one JSON blob at "${p.slug}_data".
+  - Include a "Clear saved data" link in settings or footer.` : 'No persistence required. State is in-memory only.'}
+
+────────────────────────────────────────────────────
+EXPORTS
+────────────────────────────────────────────────────
+${hasTXT ? `EXPORT TXT:
+  - Button: "⬇ Export TXT"
+  - Generates a plain-text summary of all outputs.
+  - Uses Blob + object URL download. Filename: "${p.slug}-export.txt"` : ''}
+${hasCSV ? `EXPORT CSV:
+  - Button: "⬇ Export CSV"
+  - Generates RFC 4180 compliant CSV of tabular data.
+  - Uses Blob + object URL download. Filename: "${p.slug}-data.csv"
+  - Properly escape commas and quotes in cell values.` : ''}
+${!hasTXT && !hasCSV ? '  No export functionality required.' : ''}
+${hasCharts ? `\nCHARTS (PURE HTML/CSS):
+  - Generate bar charts and/or line charts using only HTML + CSS.
+  - NO canvas, NO SVG libraries, NO chart.js.
+  - Bar chart: use <div> elements with percentage-based height/width and CSS transitions.
+  - Line chart: approximate using inline-flex divs with relative positioning.
+  - Include value labels on each bar/point.
+  - Charts must be responsive (use % widths).` : ''}
+${hasPivot ? `\nPIVOT-LIKE SUMMARY TABLE:
+  - Generate a grouped summary table below main results.
+  - Group data by a key field (category, month, type, etc — use the most logical grouping).
+  - Show count, total, and percentage columns.
+  - Table must be horizontally scrollable on mobile (overflow-x: auto wrapper).
+  - Style: dark header row, alternating row shading.` : ''}
+${hasOffline ? `\nOFFLINE-READY NOTE:
+  - Do NOT include a service worker file.
+  - Add a visible offline notice at the top of the page (dismissable):
+    "This tool works offline once loaded. No internet required after first load."
+  - Use a small banner with a wifi-off icon (text: 📡) and a dismiss ✕ button.
+  - Store dismissal in sessionStorage.` : ''}
+
+────────────────────────────────────────────────────
+OUTPUT
+────────────────────────────────────────────────────
+Return ONE complete working HTML file only.
+- No markdown code fences.
+- No \`\`\`html\`\`\` wrapper.
+- File must open in a browser and work immediately.
+- Self-contained: all CSS in <style>, all JS in <script>.
+- No external dependencies of any kind.`;
+
+  return prompt;
+}
+
+function featLabel(k){
+  var map={
+    localStorage:'localStorage persistence (save/load from browser storage)',
+    exportTXT:'Export to TXT file',
+    exportCSV:'Export to CSV file',
+    charts:'Pure HTML/CSS charts (no canvas, no libraries)',
+    pivotTable:'Pivot-like grouped summary table',
+    filters:'Filter chips / slicer-style toggle UI',
+    commandOrb:'Command orb input (keyword routing)',
+    a11y:'Clickable card accessibility patch (role=button, tabindex, Enter/Space)',
+    offline:'Offline-ready notice banner (no service worker)'
+  };
+  return map[k] || k;
+}
+
+function styleGuide(style, tone){
+  var guides = {
+    'ViaDecide Dark': `Use the ViaDecide dark system:
+  CSS vars: --bg:#0d0f14; --bg2:#13161e; --bg3:#1a1e2a; --accent:#7ee8fa; --text:#d4ddf7; --text2:#7c89a8;
+  Font: 'Segoe UI', system-ui. Border-radius: 8px/12px. Border color: #252a38.
+  Accent glow: box-shadow: 0 0 12px rgba(126,232,250,0.2);`,
+    'Retro Terminal': `Green-on-black terminal aesthetic.
+  CSS vars: --bg:#050a05; --accent:#39ff14; --text:#b0ffb0;
+  Font: 'Courier New', monospace. Use scanline effect via repeating-linear-gradient overlay.
+  Borders: 1px solid #39ff14 with low opacity on containers.`,
+    'Minimal Spreadsheet': `Clean, data-dense spreadsheet style. White/light grey background.
+  CSS vars: --bg:#ffffff; --bg2:#f5f5f5; --accent:#1a56db; --text:#1a1a1a;
+  Font: 'Arial', sans-serif. Use table-style grids, thin 1px borders, compact padding.`,
+    'Neon': `Electric dark theme with vivid neon accents.
+  CSS vars: --bg:#060010; --accent:#ff00ff; --accent2:#00ffff; --text:#f0e0ff;
+  Font: 'Courier New'. Use text-shadow neon glow on headings and key values.`,
+    'Bharat Ledger': `Warm saffron/ivory ledger style inspired by Indian accounting books.
+  CSS vars: --bg:#fdf6e3; --accent:#c0510a; --text:#2d1b00; --border:#d4a76a;
+  Font: Georgia, serif. Use bold saffron headers, warm beige containers.`
+  };
+  var toneNote = {
+    strict: 'Tone is strict/utilitarian. Labels are short. No unnecessary flourish.',
+    friendly: 'Tone is warm and accessible. Use helpful placeholder text and micro-copy.',
+    premium: 'Tone is premium. Use refined typography spacing. Output feels like a polished product.',
+    playful: 'Tone is playful. Use emoji labels, fun copy, lively animations.'
+  };
+  return (guides[style]||guides['ViaDecide Dark'])+'\n\n  Tone note: '+(toneNote[tone]||'');
+}
+
+/* ──────────────────────────────────────────
+   BUILD OUTPUT B: WEBSITE SNIPPET
+────────────────────────────────────────── */
+function buildSnippetB(p){
+  var name      = p.name || 'Unnamed Tool';
+  var slug      = p.slug || slugify(name);
+  var fileName  = p.fileName || slug+'.html';
+  var cat       = p.cat || 'tools';
+  var icon      = p.icon || '📌';
+  var tagline   = p.tagline || '';
+  var status    = p.status || 'Live';
+  var extraIntent = p.extraIntent || '';
+
+  // Build keywords
+  var nameWords = name.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ').filter(Boolean);
+  var taglineWords = tagline.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ').filter(Boolean);
+  var intentBase = [...new Set([...nameWords, ...taglineWords, slug, cat])].join(', ');
+  var intentFull = extraIntent ? intentBase+', '+extraIntent : intentBase;
+
+  var catClass = catCSSClass(cat);
+  var catStyle = catInlineStyle(cat);
+  var statusBadge = statusBadgeHTML(status);
+  var badgeClass = status==='Live'?'badge-live':status==='Beta'?'badge-beta':'badge-coming';
+  var openModalCall = `openModal('${fileName}','${icon}','${name}')`;
+  var shortDesc = tagline || (p.purpose ? p.purpose.substring(0,80)+'…' : 'ViaDecide tool');
+
+  var snippet = `<!-- ═══════════════════════════════════════════════════
+     VIADECIDE HOMEPAGE BENTO CARD: ${name.toUpperCase()}
+     File: ${fileName}
+     Category: ${cat}
+     Generated by ViaDecide Prompt Generator
+═══════════════════════════════════════════════════ -->
+
+<!-- 1. BENTO CARD BLOCK ─────────────────────────── -->
+<div class="tc ${catClass}"
+  onclick="${openModalCall}"
+  data-cat="${cat}"
+  data-orbit="${slug}"
+  data-intent="${intentFull}"
+  role="button"
+  tabindex="0"
+  aria-label="Open ${name} tool"${catStyle ? '\n  style="'+catStyle+'"' : ''}>
+
+  <div class="tc-icon">${icon}</div>
+  <div class="tc-body">
+    <div class="tc-title">${name}</div>
+    <div class="tc-desc">${shortDesc}</div>
+  </div>
+  <div class="tc-badge ${badgeClass}">${status}</div>
+
+</div>
+<!-- END CARD: ${name} ─────────────────────────────── -->
+
+
+<!-- 2. ORB SEARCH KEYWORDS ──────────────────────── -->
+<!--
+  data-intent  : "${intentFull}"
+  data-orbit   : "${slug}"
+  data-cat     : "${cat}"
+
+  Suggested intent keywords for copy-paste:
+  "${intentFull}"
+-->
+
+
+<!-- 3. OPENMODAL CALL ───────────────────────────── -->
+<!--
+  Exact openModal() usage:
+
+  ${openModalCall}
+
+  Arguments:
+    FILE  → '${fileName}'
+    ICON  → '${icon}'
+    TITLE → '${name}'
+-->
+
+
+<!-- 4. KEYBOARD SUPPORT NOTE ────────────────────── -->
+<!--
+  ✅ Keyboard support (Enter / Space) already exists via
+  the .tc[role="button"] handler in the ViaDecide main site JS.
+  No additional keyboard JS is needed here.
+
+  Ensure the card has:
+  - role="button"
+  - tabindex="0"
+  - aria-label="Open ${name} tool"
+-->
+${catStyleNote(cat, name)}
+
+<!-- ═══════════════════════════════════════════════════
+     QUICK REFERENCE
+═══════════════════════════════════════════════════
+  Tool Name  : ${name}
+  File       : ${fileName}
+  Category   : ${cat}
+  Icon       : ${icon}
+  Status     : ${status}
+  Orbit slug : ${slug}
+  Intent str : ${intentFull}
+  openModal  : ${openModalCall}
+═══════════════════════════════════════════════════ -->`;
+
+  return snippet;
+}
+
+function catCSSClass(cat){
+  var map={
+    finance:'tc-finance',
+    tools:'tc-tools',
+    commerce:'tc-commerce',
+    games:'tc-games',
+    services:'tc-services',
+    store:'tc-store',
+    blog:'tc-blog'
+  };
+  return map[cat]||'tc-tools';
+}
+
+function catInlineStyle(cat){
+  var styles={
+    finance:'background: linear-gradient(135deg, #0d1f2d 0%, #1a3040 50%, #0f2535 100%); border-color: #2a5070;',
+    tools:'background: linear-gradient(135deg, #0f1420 0%, #1a1e2a 100%); border-color: #252a38;',
+    commerce:'background: linear-gradient(135deg, #1a1200 0%, #2a1f00 100%); border-color: #4a3500;',
+    games:'background: linear-gradient(135deg, #120a1f 0%, #1e1030 100%); border-color: #3a1f5a;',
+    services:'background: linear-gradient(135deg, #0a1a0f 0%, #0f2515 100%); border-color: #1f4a2a;',
+    store:'',
+    blog:''
+  };
+  return styles[cat]||'';
+}
+
+function statusBadgeHTML(status){
+  return status;
+}
+
+function catStyleNote(cat, name){
+  if(cat==='finance'){
+    return `
+
+<!-- FINANCE STYLE NOTE ──────────────────────────────
+  Finance cards use a deep ocean blue gradient:
+    background: linear-gradient(135deg, #0d1f2d 0%, #1a3040 50%, #0f2535 100%)
+    border-color: #2a5070
+  Accent color: #5bc4f5 (light blue)
+  
+  Match existing finance tool cards for visual consistency.
+  Example reference cards: EMI Calculator, SIP Returns, etc.
+───────────────────────────────────────────────────── -->`;
+  }
+  if(cat==='tools'){
+    return `
+
+<!-- TOOLS STYLE NOTE ────────────────────────────────
+  Tools cards use the standard ViaDecide dark:
+    background: linear-gradient(135deg, #0f1420 0%, #1a1e2a 100%)
+    border-color: #252a38
+  Accent color: #7ee8fa (cyan)
+  
+  For prominent/featured tools, you may add:
+    box-shadow: 0 0 0 1px rgba(126,232,250,0.15)
+───────────────────────────────────────────────────── -->`;
+  }
+  return '';
+}
+
+/* ──────────────────────────────────────────
+   COPY + DOWNLOAD
+────────────────────────────────────────── */
+document.getElementById('copy-a').addEventListener('click',function(){
+  var txt=document.getElementById('out-a').textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Output A copied!')).catch(()=>fallbackCopy(txt));
+});
+document.getElementById('copy-b').addEventListener('click',function(){
+  var txt=document.getElementById('out-b').textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Output B copied!')).catch(()=>fallbackCopy(txt));
+});
+document.getElementById('dl-a').addEventListener('click',function(){
+  var g=window._vd_gen; if(!g) return;
+  download(g.slug+'-claude-prompt.txt', g.outA);
+  toast('⬇ Downloading prompt...');
+});
+document.getElementById('dl-b').addEventListener('click',function(){
+  var g=window._vd_gen; if(!g) return;
+  download(g.slug+'-website-snippet.txt', g.outB);
+  toast('⬇ Downloading snippet...');
+});
+
+function download(name, content){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  a.download=name; document.body.appendChild(a);
+  a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+function fallbackCopy(txt){
+  var ta=document.createElement('textarea');
+  ta.value=txt; ta.style.cssText='position:fixed;top:-999px;left:-999px';
+  document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+  ta.remove(); toast('📋 Copied!');
+}
+
+/* ── keyboard support for all buttons ── */
+document.querySelectorAll('.btn').forEach(btn=>{
+  btn.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.click(); }
+  });
+});
+
+/* ── INIT ── */
+autoLoad();
+</script>
+</body>
+</html>
