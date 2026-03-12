@@ -242,6 +242,17 @@ select option { background:var(--bg2); }
 .right-header h2 { margin:0; font-size:13px; font-weight:600; color:var(--text); }
 .right-header p  { margin:0; font-size:11px; color:var(--text2); }
 
+/* ─── COWORK STATUS ──────────────────────── */
+.cowork-dot {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:10px; font-weight:600; letter-spacing:.04em;
+  padding:3px 9px; border-radius:20px; white-space:nowrap;
+  transition:all .3s;
+}
+.cowork-dot.connected { background:rgba(74,222,128,.1); color:var(--green); border:1px solid rgba(74,222,128,.3); }
+.cowork-dot.offline   { background:rgba(248,113,113,.08); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+.cowork-dot span { opacity:.85; }
+
 /* ─── RESPONSIVE ─────────────────────────────── */
 @media(max-width:900px){
   #app { grid-template-columns:1fr; }
@@ -269,6 +280,7 @@ select option { background:var(--bg2); }
     <p>Generate Claude prompt + main website integration snippet.</p>
   </div>
   <div class="topbar-actions">
+    <div id="cowork-status" class="cowork-dot offline">🔴 <span>Cowork server offline — run vd-server.js</span></div>
     <button class="btn btn-ghost btn-sm" id="btn-example">⚡ Load Example</button>
     <button class="btn btn-danger btn-sm" id="btn-reset">✕ Reset</button>
   </div>
@@ -728,6 +740,11 @@ function generate(){
   // stash for download
   window._vd_gen = { slug, outA, outB };
   toast('⚡ Outputs generated!');
+
+  // ── Cowork: push outputs to companion server ──────────────────
+  pushToCoworkServer({ slug, toolName: name, promptA: outA, snippetB: outB,
+    meta: { cat, icon, tagline, status, lang, tone, style, fileName } });
+}
 }
 
 /* ──────────────────────────────────────────
@@ -1177,6 +1194,47 @@ function fallbackCopy(txt){
   document.body.appendChild(ta); ta.select(); document.execCommand('copy');
   ta.remove(); toast('📋 Copied!');
 }
+
+/* ──────────────────────────────────────────
+   COWORK COMPANION SERVER INTEGRATION
+   Pushes every generated output to localhost:3847
+   so Claude/Cowork can GET /outputs at any time.
+────────────────────────────────────────── */
+var COWORK_SERVER = 'http://localhost:3847';
+var coworkOnline = false;
+
+function pushToCoworkServer(payload){
+  fetch(COWORK_SERVER+'/outputs', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r=>{
+    if(r.ok){ setCoworkStatus(true); }
+    else { setCoworkStatus(false); }
+  })
+  .catch(()=>setCoworkStatus(false));
+}
+
+function setCoworkStatus(online){
+  coworkOnline = online;
+  var el = document.getElementById('cowork-status');
+  if(!el) return;
+  if(online){
+    el.innerHTML = '🟢 <span>Cowork server connected</span>';
+    el.className = 'cowork-dot connected';
+  } else {
+    el.innerHTML = '🔴 <span>Cowork server offline — run vd-server.js</span>';
+    el.className = 'cowork-dot offline';
+  }
+}
+
+// Poll server health every 5s so status stays current
+function pollCoworkHealth(){
+  fetch(COWORK_SERVER+'/health').then(r=>r.ok?setCoworkStatus(true):setCoworkStatus(false)).catch(()=>setCoworkStatus(false));
+}
+setInterval(pollCoworkHealth, 5000);
+pollCoworkHealth();
 
 /* ── keyboard support for all buttons ── */
 document.querySelectorAll('.btn').forEach(btn=>{
