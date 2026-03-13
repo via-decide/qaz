@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>ViaDecide Prompt Generator</title>
+<title>ViaDecide Multi-Agent Prompt Studio</title>
 
 <!-- ═══════════════════════════════════════════════════
      VIADECIDE GLOBAL UX PATCH
@@ -125,46 +125,58 @@ input[type=text], textarea, select {
 input[type=text]:focus, textarea:focus, select:focus {
   border-color: var(--accent); background: #13161e;
 }
-textarea { resize:vertical; min-height:72px; }
-select option { background:var(--bg2); }
+textarea { resize:vertical; min-height:64px; }
+textarea.mono, input.mono { font-family:var(--font-mono); font-size:12px; }
 
-.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 
-/* checkbox grid */
-.cb-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-.cb-item { display:flex; align-items:center; gap:7px; cursor:pointer;
-  padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius);
-  background:var(--bg3); transition:border-color .15s; font-size:12px; color:var(--text);
+.small-note { font-size:10px; color:var(--text3); line-height:1.4; }
+
+/* ─── FEATURE GRID ──────────────────────────── */
+#features-grid {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
 }
-.cb-item:hover { border-color: var(--border2); }
-.cb-item input[type=checkbox] { accent-color:var(--accent); width:14px; height:14px; flex-shrink:0; }
-.cb-item.checked { border-color: var(--accent3); background:#1a1630; }
+.cb-item {
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  padding:10px 12px;
+  transition:border-color .15s, background .15s, transform .08s;
+}
+.cb-item.checked {
+  border-color: var(--accent);
+  background: rgba(126,232,250,.06);
+}
+.cb-item:hover { border-color:#3b425b; }
+.cb-item input { width:15px; height:15px; accent-color: var(--accent2); }
+.cb-item span { font-size:12px; color:var(--text); }
 
 /* ─── BUTTONS ───────────────────────────────── */
 .btn {
-  display:inline-flex; align-items:center; gap:6px;
-  padding: 8px 16px; border-radius:var(--radius); border:1px solid transparent;
-  font-size:12px; font-weight:600; letter-spacing:.04em;
-  cursor:pointer; transition:all .15s; white-space:nowrap;
+  border:1px solid var(--border2);
+  background:var(--bg3);
+  color:var(--text);
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:12px; font-weight:600;
+  cursor:pointer;
+  transition: transform .08s ease, border-color .15s, background .15s;
 }
+.btn:hover { border-color:#3c455f; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
 .btn-primary {
-  background: linear-gradient(135deg,#1a3a4a,#1a2a40);
-  border-color: var(--accent); color:var(--accent);
+  background: linear-gradient(180deg, #1f6b8b 0%, #184a60 100%);
+  border-color:#2d6f8d;
+  color:#e9fbff;
 }
-.btn-primary:hover { background:#1a3a5a; box-shadow:0 0 12px rgba(126,232,250,.2); }
-.btn-ghost {
-  background:transparent; border-color:var(--border2); color:var(--text2);
-}
-.btn-ghost:hover { border-color:var(--text2); color:var(--text); }
-.btn-green { border-color:var(--green); color:var(--green); background:rgba(74,222,128,.05); }
-.btn-green:hover { background:rgba(74,222,128,.12); }
-.btn-amber { border-color:var(--amber); color:var(--amber); background:rgba(251,191,36,.05); }
-.btn-amber:hover { background:rgba(251,191,36,.12); }
-.btn-danger { border-color:#f87171; color:#f87171; background:rgba(248,113,113,.05); }
-.btn-danger:hover { background:rgba(248,113,113,.12); }
-.btn-lg { padding:10px 22px; font-size:13px; }
-.btn-sm { padding:5px 10px; font-size:11px; }
+.btn-ghost { background:transparent; }
+.btn-lg { padding:10px 14px; font-size:13px; }
+.btn-sm { padding:5px 8px; font-size:11px; }
 
 /* ─── GENERATE BAR ──────────────────────────── */
 #gen-bar {
@@ -196,6 +208,7 @@ select option { background:var(--bg2); }
 }
 .output-label.a { color:var(--accent); }
 .output-label.b { color:var(--accent3); }
+.output-label.c { color:var(--green); }
 .output-actions { display:flex; gap:6px; }
 .output-body {
   padding:14px;
@@ -219,237 +232,214 @@ select option { background:var(--bg2); }
   text-transform:uppercase;
 }
 .badge-live   { background:rgba(74,222,128,.12); color:var(--green); border:1px solid rgba(74,222,128,.3); }
-.badge-beta   { background:rgba(251,191,36,.1); color:var(--amber); border:1px solid rgba(251,191,36,.3); }
-.badge-coming { background:rgba(126,232,250,.08); color:var(--accent2); border:1px solid rgba(126,232,250,.2); }
+.badge-beta   { background:rgba(251,191,36,.1); color:var(--amber); border:1px solid rgba(251,191,36,.25); }
+.badge-coming { background:rgba(167,139,250,.1); color:var(--accent3); border:1px solid rgba(167,139,250,.25); }
 
 /* ─── TOAST ─────────────────────────────────── */
 #toast {
-  position:fixed; bottom:24px; right:24px; z-index:9999;
-  padding:10px 18px; border-radius:var(--radius);
-  background:var(--bg3); border:1px solid var(--green);
-  color:var(--green); font-size:12px; font-weight:600;
-  opacity:0; transform:translateY(8px);
-  transition:all .2s; pointer-events:none;
+  position:fixed;
+  left:50%; bottom:20px; transform:translateX(-50%) translateY(20px);
+  background:#0f131b; color:#e8f7ff;
+  border:1px solid #2d394f; border-radius:12px;
+  padding:10px 14px; font-size:12px; box-shadow:var(--shadow);
+  opacity:0; pointer-events:none; transition:.2s ease;
+  z-index:999;
 }
-#toast.show { opacity:1; transform:translateY(0); }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ─── RIGHT COLUMN HEADER ───────────────────── */
+/* ─── RIGHT HEADER ──────────────────────────── */
 .right-header {
-  display:flex; align-items:center; gap:12px; padding-bottom:4px;
-  border-bottom:1px solid var(--border);
-  margin-bottom:4px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px;
 }
-.right-header h2 { margin:0; font-size:13px; font-weight:600; color:var(--text); }
-.right-header p  { margin:0; font-size:11px; color:var(--text2); }
+.right-header h2 { margin:0; font-size:18px; }
+.right-header p { margin:0; font-size:12px; color:var(--text2); }
 
-/* ─── COWORK STATUS ──────────────────────── */
+/* ─── COWORK STATUS ─────────────────────────── */
 .cowork-dot {
-  display:inline-flex; align-items:center; gap:5px;
-  font-size:10px; font-weight:600; letter-spacing:.04em;
-  padding:3px 9px; border-radius:20px; white-space:nowrap;
-  transition:all .3s;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; padding:6px 9px; border-radius:20px;
+  border:1px solid var(--border2); background:var(--bg3); color:var(--text2);
 }
-.cowork-dot.connected { background:rgba(74,222,128,.1); color:var(--green); border:1px solid rgba(74,222,128,.3); }
-.cowork-dot.offline   { background:rgba(248,113,113,.08); color:#f87171; border:1px solid rgba(248,113,113,.25); }
-.cowork-dot span { opacity:.85; }
+.cowork-dot.connected { color:var(--green); border-color:rgba(74,222,128,.22); background:rgba(74,222,128,.06); }
+.cowork-dot.offline   { color:var(--amber); border-color:rgba(251,191,36,.22); background:rgba(251,191,36,.05); }
 
-/* ─── RESPONSIVE ─────────────────────────────── */
-@media(max-width:900px){
+/* ─── RESPONSIVE ────────────────────────────── */
+@media (max-width: 1100px){
   #app { grid-template-columns:1fr; }
-  #panel-left { position:static; max-height:none; border-right:none;
-    border-bottom:1px solid var(--border); }
+  #panel-left {
+    position:static; max-height:none;
+    border-right:none; border-bottom:1px solid var(--border);
+  }
   #panel-right { max-height:none; }
-  #gen-bar { margin:0 -24px -24px; }
-  .row3 { grid-template-columns:1fr 1fr; }
 }
-@media(max-width:560px){
-  #topbar { padding:10px 16px; }
-  #panel-left, #panel-right { padding:16px; }
-  .row2, .row3 { grid-template-columns:1fr; }
-  .cb-grid { grid-template-columns:1fr; }
+@media (max-width: 640px){
+  .row-2, .row-3, #features-grid { grid-template-columns:1fr; }
+  #topbar { padding:10px 14px; }
+  #panel-left, #panel-right { padding:14px; }
+  #gen-bar { margin:0 -14px -14px; padding:10px 14px; }
 }
 </style>
 </head>
 <body>
 
-<!-- ═══ TOPBAR ═══ -->
+<!-- ───────────────── TOPBAR ───────────────── -->
 <div id="topbar">
-  <div class="logo">ViaDecide</div>
+  <div class="logo">VIA</div>
   <div class="topbar-text">
-    <h1>Prompt Generator</h1>
-    <p>Generate Claude prompt + main website integration snippet.</p>
+    <h1>ViaDecide Multi-Agent Prompt Studio</h1>
+    <p>Generate one orchestrated prompt stack for Prompt Engineer → Code Generator → Code Reviewer</p>
   </div>
   <div class="topbar-actions">
     <div id="cowork-status" class="cowork-dot offline">🔴 <span>Cowork server offline — run vd-server.js</span></div>
-    <button class="btn btn-ghost btn-sm" id="btn-example">⚡ Load Example</button>
-    <button class="btn btn-danger btn-sm" id="btn-reset">✕ Reset</button>
+    <button class="btn btn-ghost btn-sm" id="btn-example">Load Example</button>
+    <button class="btn btn-ghost btn-sm" id="btn-clear">Clear</button>
   </div>
 </div>
 
-<!-- ═══ MAIN APP ═══ -->
+<!-- ───────────────── APP ───────────────── -->
 <div id="app">
 
   <!-- ─── LEFT: FORM ─── -->
   <div id="panel-left">
 
-    <!-- A: Tool Basics -->
+    <!-- BASICS -->
     <div class="section">
-      <div class="section-head">🔧 A — Tool Basics</div>
+      <div class="section-head">⚙ Tool Basics</div>
       <div class="section-body">
         <div>
-          <label for="f-name">Tool Name *</label>
+          <label for="f-name">Tool Name</label>
           <input type="text" id="f-name" placeholder="e.g. Opportunity Radar" autocomplete="off"/>
         </div>
-        <div class="row2">
+        <div class="row-2">
           <div>
-            <label for="f-slug">Slug (auto)</label>
-            <input type="text" id="f-slug" placeholder="opportunity-radar" autocomplete="off"/>
+            <label for="f-slug">Slug</label>
+            <input type="text" id="f-slug" class="mono" placeholder="opportunity-radar" autocomplete="off"/>
           </div>
           <div>
-            <label for="f-file">File Name (auto)</label>
-            <input type="text" id="f-file" placeholder="opportunity-radar.html" autocomplete="off"/>
+            <label for="f-file">File Name</label>
+            <input type="text" id="f-file" class="mono" placeholder="opportunity-radar.html" autocomplete="off"/>
           </div>
         </div>
-        <div class="row2">
+        <div class="row-3">
           <div>
             <label for="f-cat">Category</label>
             <select id="f-cat">
               <option value="tools">tools</option>
-              <option value="finance">finance</option>
-              <option value="commerce">commerce</option>
-              <option value="games">games</option>
-              <option value="services">services</option>
-              <option value="store">store</option>
-              <option value="blog">blog</option>
+              <option value="education">education</option>
+              <option value="simulations">simulations</option>
+              <option value="business">business</option>
+              <option value="ai">ai</option>
+              <option value="experiments">experiments</option>
             </select>
           </div>
           <div>
-            <label for="f-icon">Icon (emoji)</label>
-            <input type="text" id="f-icon" placeholder="📌" maxlength="4" autocomplete="off"/>
+            <label for="f-icon">Icon</label>
+            <input type="text" id="f-icon" placeholder="📡" maxlength="4"/>
+          </div>
+          <div>
+            <label for="f-status">Homepage Badge</label>
+            <select id="f-status">
+              <option>Live</option>
+              <option>Beta</option>
+              <option>Coming</option>
+            </select>
           </div>
         </div>
         <div>
-          <label for="f-tagline">One-line Tagline</label>
-          <input type="text" id="f-tagline" placeholder="Find hidden opportunities around a decision." autocomplete="off"/>
+          <label for="f-tagline">Short Tagline</label>
+          <input type="text" id="f-tagline" placeholder="One-line description shown on card + prompt."/>
         </div>
+      </div>
+    </div>
+
+    <!-- PURPOSE -->
+    <div class="section">
+      <div class="section-head">🎯 Purpose + Users</div>
+      <div class="section-body">
         <div>
-          <label for="f-purpose">Purpose</label>
-          <textarea id="f-purpose" placeholder="Describe what this tool does and why it exists..."></textarea>
+          <label for="f-purpose">Purpose / What the tool should do</label>
+          <textarea id="f-purpose" placeholder="Describe the main job of the tool."></textarea>
         </div>
         <div>
           <label for="f-user">Target User</label>
-          <input type="text" id="f-user" placeholder="e.g. startup founders, students, freelancers" autocomplete="off"/>
+          <textarea id="f-user" placeholder="e.g. founder, student, operator, parent, creator"></textarea>
         </div>
       </div>
     </div>
 
-    <!-- B: Inputs / Outputs -->
+    <!-- INPUTS OUTPUTS -->
     <div class="section">
-      <div class="section-head">📥 B — Inputs / Outputs</div>
+      <div class="section-head">🔁 Inputs + Outputs</div>
       <div class="section-body">
         <div>
           <label for="f-inputs">User Inputs (one per line)</label>
-          <textarea id="f-inputs" placeholder="Industry&#10;City&#10;Skill&#10;Capital" style="min-height:90px;"></textarea>
+          <textarea id="f-inputs" class="mono" placeholder="Industry&#10;City&#10;Skill&#10;Budget"></textarea>
         </div>
         <div>
           <label for="f-outputs">Tool Outputs (one per line)</label>
-          <textarea id="f-outputs" placeholder="3 overlooked opportunities&#10;2 risky paths&#10;1 asymmetric bet" style="min-height:90px;"></textarea>
+          <textarea id="f-outputs" class="mono" placeholder="Opportunity list&#10;Risk score&#10;Suggested next steps"></textarea>
         </div>
       </div>
     </div>
 
-    <!-- C: Style / Language / Tone -->
+    <!-- DESIGN -->
     <div class="section">
-      <div class="section-head">🎨 C — Style / Language / Tone</div>
+      <div class="section-head">🎨 Design System</div>
       <div class="section-body">
-        <div class="row3">
+        <div class="row-3">
           <div>
             <label for="f-style">Visual Style</label>
             <select id="f-style">
-              <option value="ViaDecide Dark">ViaDecide Dark</option>
-              <option value="Retro Terminal">Retro Terminal</option>
-              <option value="Minimal Spreadsheet">Minimal Spreadsheet</option>
-              <option value="Neon">Neon</option>
-              <option value="Bharat Ledger">Bharat Ledger</option>
+              <option>ViaDecide Dark Glass</option>
+              <option>Minimal Dashboard</option>
+              <option>Retro Console</option>
+              <option>Soft Cards</option>
+              <option>Dense Operator UI</option>
             </select>
           </div>
           <div>
             <label for="f-lang">Language</label>
             <select id="f-lang">
-              <option value="English">English</option>
-              <option value="Hindi">Hindi</option>
-              <option value="Bilingual">Bilingual (EN/HI)</option>
+              <option>English</option>
+              <option>Hindi</option>
+              <option>Bilingual</option>
             </select>
           </div>
           <div>
             <label for="f-tone">Tone</label>
             <select id="f-tone">
-              <option value="strict">strict</option>
-              <option value="friendly">friendly</option>
-              <option value="premium">premium</option>
-              <option value="playful">playful</option>
+              <option>Practical</option>
+              <option>Analytical</option>
+              <option>Playful</option>
+              <option>Executive</option>
             </select>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- D: Features -->
-    <div class="section">
-      <div class="section-head">✅ D — Features</div>
-      <div class="section-body">
-        <div class="cb-grid" id="features-grid">
-          <label class="cb-item" data-key="localStorage">
-            <input type="checkbox" value="localStorage"/> 💾 localStorage
-          </label>
-          <label class="cb-item" data-key="exportTXT">
-            <input type="checkbox" value="exportTXT"/> 📄 Export TXT
-          </label>
-          <label class="cb-item" data-key="exportCSV">
-            <input type="checkbox" value="exportCSV"/> 📊 Export CSV
-          </label>
-          <label class="cb-item" data-key="charts">
-            <input type="checkbox" value="charts"/> 📈 Charts (no libs)
-          </label>
-          <label class="cb-item" data-key="pivotTable">
-            <input type="checkbox" value="pivotTable"/> 🔄 Pivot Summary Table
-          </label>
-          <label class="cb-item" data-key="filters">
-            <input type="checkbox" value="filters"/> 🔍 Filters / Slicers
-          </label>
-          <label class="cb-item" data-key="commandOrb">
-            <input type="checkbox" value="commandOrb"/> 🔮 Command Orb Input
-          </label>
-          <label class="cb-item" data-key="a11y">
-            <input type="checkbox" value="a11y"/> ♿ Clickable Cards A11y
-          </label>
-          <label class="cb-item" data-key="offline">
-            <input type="checkbox" value="offline"/> 📡 Offline-Ready Note
-          </label>
+        <div id="features-grid">
+          <label class="cb-item"><input type="checkbox" value="localStorage"/><span>Save State (localStorage)</span></label>
+          <label class="cb-item"><input type="checkbox" value="exportTXT"/><span>Export TXT</span></label>
+          <label class="cb-item"><input type="checkbox" value="exportCSV"/><span>Export CSV</span></label>
+          <label class="cb-item"><input type="checkbox" value="charts"/><span>Charts / Visuals</span></label>
+          <label class="cb-item"><input type="checkbox" value="pivotTable"/><span>Pivot Summary / Table</span></label>
+          <label class="cb-item"><input type="checkbox" value="filters"/><span>Filters / Sort</span></label>
+          <label class="cb-item"><input type="checkbox" value="commandOrb"/><span>Command Orb / Quick Actions</span></label>
+          <label class="cb-item"><input type="checkbox" value="a11y"/><span>Strong Accessibility</span></label>
+          <label class="cb-item"><input type="checkbox" value="offline"/><span>Offline Friendly</span></label>
+        </div>
+
+        <div class="row-2">
+          <label class="cb-item" id="opt-consistent-wrap"><input type="checkbox" id="opt-consistent" checked/><span>Preserve ViaDecide UI language</span></label>
+          <label class="cb-item" id="opt-mobile-wrap"><input type="checkbox" id="opt-mobile" checked/><span>Mobile-first</span></label>
         </div>
       </div>
     </div>
 
-    <!-- E: Prompt Options -->
+    <!-- HOMEPAGE / ORBIT -->
     <div class="section">
-      <div class="section-head">⚙️ E — Prompt Options</div>
+      <div class="section-head">🛰 Homepage / Orbit Metadata</div>
       <div class="section-body">
-        <div class="cb-grid">
-          <label class="cb-item" id="opt-consistent-wrap">
-            <input type="checkbox" id="opt-consistent" checked/> 🔒 Keep UI consistent
-          </label>
-          <label class="cb-item" id="opt-mobile-wrap">
-            <input type="checkbox" id="opt-mobile" checked/> 📱 Mobile-first
-          </label>
-        </div>
-        <div>
-          <label for="f-status">Card Status Badge</label>
-          <select id="f-status">
-            <option value="Live">Live</option>
-            <option value="Beta">Beta</option>
-            <option value="Coming Soon">Coming Soon</option>
-          </select>
-        </div>
         <div>
           <label for="f-intent">Extra Intent Keywords (comma-sep, optional)</label>
           <input type="text" id="f-intent" placeholder="e.g. radar, scan, shortlist" autocomplete="off"/>
@@ -459,7 +449,7 @@ select option { background:var(--bg2); }
 
     <!-- GENERATE BAR -->
     <div id="gen-bar">
-      <button class="btn btn-primary btn-lg" id="btn-generate">⚡ Generate Outputs</button>
+      <button class="btn btn-primary btn-lg" id="btn-generate">⚡ Generate 3-Agent Stack</button>
       <span id="gen-status" style="font-size:11px;color:var(--text3);"></span>
     </div>
 
@@ -471,32 +461,44 @@ select option { background:var(--bg2); }
     <div class="right-header">
       <div>
         <h2>Generated Outputs</h2>
-        <p>Fill the form and click Generate.</p>
+        <p>Build one reusable multi-agent prompt stack: Prompt Engineer → Code Generator → Code Reviewer.</p>
       </div>
     </div>
 
     <!-- OUTPUT A -->
     <div class="output-panel">
       <div class="output-head">
-        <div class="output-label a">⚡ Output A — Claude Tool-Build Prompt</div>
+        <div class="output-label a">🧠 Output A — 3-Agent Master Prompt</div>
         <div class="output-actions">
           <button class="btn btn-ghost btn-sm" id="copy-a" disabled>📋 Copy</button>
           <button class="btn btn-ghost btn-sm" id="dl-a" disabled>⬇ Download</button>
         </div>
       </div>
-      <div class="output-body placeholder allow-select" id="out-a">Fill the form and click Generate to see the Claude prompt here.</div>
+      <div class="output-body placeholder allow-select" id="out-a">Fill the form and click Generate to see the single master prompt for Agent 1 → Agent 2 → Agent 3.</div>
     </div>
 
     <!-- OUTPUT B -->
     <div class="output-panel">
       <div class="output-head">
-        <div class="output-label b">🧩 Output B — Website Integration Snippet</div>
+        <div class="output-label b">🧩 Output B — Agent Handoff Pack</div>
         <div class="output-actions">
           <button class="btn btn-ghost btn-sm" id="copy-b" disabled>📋 Copy</button>
           <button class="btn btn-ghost btn-sm" id="dl-b" disabled>⬇ Download</button>
         </div>
       </div>
-      <div class="output-body placeholder allow-select" id="out-b">Fill the form and click Generate to see the integration snippet here.</div>
+      <div class="output-body placeholder allow-select" id="out-b">Fill the form and click Generate to see the explicit Agent 1, Agent 2, and Agent 3 handoff instructions.</div>
+    </div>
+
+    <!-- OUTPUT C -->
+    <div class="output-panel">
+      <div class="output-head">
+        <div class="output-label c">🚀 Output C — Website Integration Snippet</div>
+        <div class="output-actions">
+          <button class="btn btn-ghost btn-sm" id="copy-c" disabled>📋 Copy</button>
+          <button class="btn btn-ghost btn-sm" id="dl-c" disabled>⬇ Download</button>
+        </div>
+      </div>
+      <div class="output-body placeholder allow-select" id="out-c">Fill the form and click Generate to see the homepage integration snippet here.</div>
     </div>
 
   </div><!-- /panel-right -->
@@ -643,63 +645,63 @@ document.getElementById('btn-example').addEventListener('click',function(){
   setV('f-cat','tools');
   setV('f-icon','📡');
   setV('f-tagline','Find hidden opportunities around a decision.');
-  setV('f-purpose','User enters industry, city, skill, capital. Tool outputs overlooked opportunities, risky paths, and asymmetric bets. Helps founders and freelancers discover non-obvious paths forward.');
-  setV('f-user','Startup founders, freelancers, career-switchers');
-  setV('f-inputs','Industry\nCity\nSkill\nCapital');
-  setV('f-outputs','3 overlooked opportunities\n2 risky paths\n1 asymmetric bet');
-  setV('f-style','ViaDecide Dark');
+  setV('f-purpose','User enters industry, city, skill, capital. Tool outputs overlooked opportunities, priority score, and first 3 action steps.');
+  setV('f-user','Founder, operator, freelancer, small business owner.');
+  setV('f-inputs','Industry\nCity\nSkill / advantage\nAvailable capital\nTime available');
+  setV('f-outputs','Top opportunity list\nOpportunity score\nReasoning summary\n3 next actions');
+  setV('f-style','ViaDecide Dark Glass');
   setV('f-lang','English');
-  setV('f-tone','strict');
+  setV('f-tone','Analytical');
   setV('f-status','Live');
-  setV('f-intent','radar, scan, opportunity, gap, blind spot');
-  // set features
-  var feats=['localStorage','exportTXT','commandOrb'];
-  CB_FEATS.forEach(k=>{
+  setV('f-intent','opportunity, market, founder, ideas, shortlist');
+  ['localStorage','exportTXT','charts','filters','a11y'].forEach(k=>{
     var el=document.querySelector('#features-grid input[value="'+k+'"]');
-    if(el){ el.checked=feats.includes(k); el.closest('.cb-item').classList.toggle('checked',feats.includes(k)); }
+    if(el){ el.checked=true; el.closest('.cb-item').classList.add('checked'); }
+  });
+  ['exportCSV','pivotTable','commandOrb','offline'].forEach(k=>{
+    var el=document.querySelector('#features-grid input[value="'+k+'"]');
+    if(el){ el.checked=false; el.closest('.cb-item').classList.remove('checked'); }
   });
   document.getElementById('opt-consistent').checked=true;
   document.getElementById('opt-consistent-wrap').classList.add('checked');
   document.getElementById('opt-mobile').checked=true;
   document.getElementById('opt-mobile-wrap').classList.add('checked');
   autoSave();
-  toast('✅ Example loaded!');
+  toast('Example loaded.');
 });
 
-/* ── Reset ── */
-document.getElementById('btn-reset').addEventListener('click',function(){
-  if(!confirm('Reset all fields and clear saved data?')) return;
+/* ── Clear ── */
+document.getElementById('btn-clear').addEventListener('click',function(){
+  if(!confirm('Clear all fields?')) return;
   FIELDS.forEach(id=>setV(id,''));
-  CB_FEATS.forEach(k=>{
-    var el=document.querySelector('#features-grid input[value="'+k+'"]');
-    if(el){ el.checked=false; el.closest('.cb-item').classList.remove('checked'); }
+  document.getElementById('f-cat').value='tools';
+  document.getElementById('f-style').value='ViaDecide Dark Glass';
+  document.getElementById('f-lang').value='English';
+  document.getElementById('f-tone').value='Practical';
+  document.getElementById('f-status').value='Live';
+  document.querySelectorAll('#features-grid input').forEach(el=>{
+    el.checked=false; el.closest('.cb-item').classList.remove('checked');
   });
-  OPTS.forEach(id=>{
-    var el=document.getElementById(id);
-    el.checked=id==='opt-consistent'||id==='opt-mobile';
-    el.closest('.cb-item').classList.toggle('checked',el.checked);
-  });
-  setV('f-icon','📌'); setV('f-status','Live');
+  document.getElementById('opt-consistent').checked=true;
+  document.getElementById('opt-consistent-wrap').classList.add('checked');
+  document.getElementById('opt-mobile').checked=true;
+  document.getElementById('opt-mobile-wrap').classList.add('checked');
   manualSlug=false; manualFile=false;
   try{ localStorage.removeItem('vd_promptgen'); }catch(e){}
-  var outA=document.getElementById('out-a');
-  var outB=document.getElementById('out-b');
-  outA.textContent='Fill the form and click Generate to see the Claude prompt here.';
-  outA.classList.add('placeholder');
-  outB.textContent='Fill the form and click Generate to see the integration snippet here.';
-  outB.classList.add('placeholder');
-  document.getElementById('copy-a').disabled=true;
-  document.getElementById('copy-b').disabled=true;
-  document.getElementById('dl-a').disabled=true;
-  document.getElementById('dl-b').disabled=true;
+  document.getElementById('out-a').textContent='Fill the form and click Generate to see the single master prompt for Agent 1 → Agent 2 → Agent 3.';
+  document.getElementById('out-a').classList.add('placeholder');
+  document.getElementById('out-b').textContent='Fill the form and click Generate to see the explicit Agent 1, Agent 2, and Agent 3 handoff instructions.';
+  document.getElementById('out-b').classList.add('placeholder');
+  document.getElementById('out-c').textContent='Fill the form and click Generate to see the homepage integration snippet here.';
+  document.getElementById('out-c').classList.add('placeholder');
+  ['copy-a','copy-b','copy-c','dl-a','dl-b','dl-c'].forEach(id=>document.getElementById(id).disabled=true);
   document.getElementById('gen-status').textContent='';
-  toast('🗑 Cleared!');
+  window._vd_gen = null;
+  toast('Cleared.');
 });
 
-/* ════════════════════════════════════════════
-   GENERATE
-════════════════════════════════════════════ */
-document.getElementById('btn-generate').addEventListener('click',generate);
+/* ── Generate ── */
+document.getElementById('btn-generate').addEventListener('click', generate);
 
 function generate(){
   var name      = gv('f-name');
@@ -723,28 +725,32 @@ function generate(){
 
   if(!name){ toast('⚠ Tool Name is required.'); return; }
 
-  var outA = buildPromptA({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,keepUI,mobile});
-  var outB = buildSnippetB({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,status,extraIntent});
+  var outA = buildMasterPrompt({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,keepUI,mobile});
+  var outB = buildAgentPack({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,keepUI,mobile});
+  var outC = buildSnippetB({name,slug,fileName,cat,icon,tagline,purpose,targetUser,inputs,outputs,style,lang,tone,feats,status,extraIntent});
 
   var elA = document.getElementById('out-a');
   var elB = document.getElementById('out-b');
+  var elC = document.getElementById('out-c');
   elA.textContent = outA; elA.classList.remove('placeholder');
   elB.textContent = outB; elB.classList.remove('placeholder');
+  elC.textContent = outC; elC.classList.remove('placeholder');
 
   document.getElementById('copy-a').disabled=false;
   document.getElementById('copy-b').disabled=false;
+  document.getElementById('copy-c').disabled=false;
   document.getElementById('dl-a').disabled=false;
   document.getElementById('dl-b').disabled=false;
+  document.getElementById('dl-c').disabled=false;
   document.getElementById('gen-status').textContent='✅ Generated at '+new Date().toLocaleTimeString();
 
   // stash for download
-  window._vd_gen = { slug, outA, outB };
-  toast('⚡ Outputs generated!');
+  window._vd_gen = { slug, outA, outB, outC };
+  toast('⚡ 3-agent stack generated!');
 
   // ── Cowork: push outputs to companion server ──────────────────
-  pushToCoworkServer({ slug, toolName: name, promptA: outA, snippetB: outB,
+  pushToCoworkServer({ slug, toolName: name, masterPrompt: outA, agentPack: outB, snippet: outC,
     meta: { cat, icon, tagline, status, lang, tone, style, fileName } });
-}
 }
 
 /* ──────────────────────────────────────────
@@ -867,135 +873,196 @@ ${hasA11y ? `All clickable <div> and non-button interactive elements MUST have:
   <div class="card" role="button" tabindex="0" aria-label="View details"
     onclick="handleCard(this)"
     onkeydown="if(e.key==='Enter'||e.key===' '){e.preventDefault();this.click()}">
-  </div>` : `Standard semantic HTML accessibility (button, label for/id pairs, aria-label on icon buttons).
-All form elements must have proper labels.`}
+  </div>` : `Standard semantic HTML accessibility (button, label, input, select, table, etc.).`}
 
 ────────────────────────────────────────────────────
-LAYOUT
+FEATURE REQUIREMENTS
 ────────────────────────────────────────────────────
-${p.mobile ? '- Mobile-first: base styles target 360px+, wider layouts added via min-width media queries.\n' : ''}- Two-region layout: input section (left/top) + output section (right/bottom).
-- Sticky "Generate" / "Calculate" button bar at bottom of input section.
-- Outputs displayed as cards or structured result blocks.
-${hasFilters ? '- Include filter chips / slicer-style toggles above result area.' : ''}
+${featStr}
+
+${hasLocal ? `
+LOCAL STORAGE
+- Persist user inputs and important output state to localStorage.
+- On page load, restore the last working state if found.
+- Include a clear/reset option that also clears saved state.
+` : ''}${hasTXT ? `
+EXPORT TXT
+- Add a button that exports the main output/results as a plain .txt file.
+` : ''}${hasCSV ? `
+EXPORT CSV
+- Add a button that exports structured result rows as a .csv file with useful headers.
+` : ''}${hasCharts ? `
+CHARTS / VISUALS
+- Include simple, self-contained charts or visual summaries using only HTML/CSS/SVG/canvas.
+- No external charting libraries.
+` : ''}${hasPivot ? `
+PIVOT / SUMMARY TABLE
+- Include a compact summary table that groups or aggregates the main output in a useful way.
+` : ''}${hasFilters ? `
+FILTERS / SORT
+- Include controls to filter or sort the results where relevant.
+` : ''}${hasOrb ? `
+COMMAND ORB
+- Include a primary quick-action surface (floating orb, toolbar, or compact action rail) that triggers common actions.
+` : ''}${hasOffline ? `
+OFFLINE FRIENDLY
+- The page should work as a standalone static HTML file with no network dependency.
+` : ''}
 
 ────────────────────────────────────────────────────
-LOGIC ENGINE
+OUTPUT QUALITY BAR
 ────────────────────────────────────────────────────
-- Pure vanilla JS. No frameworks. No libraries.
-- Collect all form inputs on submit.
-- Validate required fields; show inline error messages.
-- Compute/generate outputs based on the purpose above.
-- Render results into the DOM without page reload.
-${hasOrb ? `\nCOMMAND ORB INPUT:
-  Include a special command input at the top of the tool.
-  User can type natural-language style keywords to trigger tool actions.
-  Examples: "reset", "export", "generate", "clear", "<section-name>"
-  Route keywords to appropriate handler functions.
-  Style as a pill-shaped search bar with an orb icon (🔮 or ◉).
-  Provide visual keyword hints below the orb input.` : ''}
+- The tool must feel complete, polished, and immediately usable.
+- No fake buttons.
+- No placeholder lorem ipsum.
+- No unfinished sections.
+- Avoid clutter; use a strong hierarchy and readable spacing.
+- Prefer clean inline SVG/icons if needed, but keep file self-contained.
+- Include meaningful empty states and validation.
+- Make the logic deterministic and understandable.
 
 ────────────────────────────────────────────────────
-DATA MODEL
+IMPLEMENTATION NOTES
 ────────────────────────────────────────────────────
-${hasLocal ? `Use localStorage for persistence:
-  - Save all user inputs on every change (debounced 400ms).
-  - Load saved data on page load (graceful fallback if empty).
-  - Key naming: "${p.slug}_<field>" or one JSON blob at "${p.slug}_data".
-  - Include a "Clear saved data" link in settings or footer.` : 'No persistence required. State is in-memory only.'}
+- Use semantic HTML + clean CSS + vanilla JS only.
+- Keep all CSS and JS inline in the same file.
+- Use clear IDs and well-named functions.
+- The app must work by double-clicking the HTML file locally.
+- No build tools. No frameworks. No dependencies.
+- Ensure keyboard navigation works.
+- Keep code organized and commented.
 
 ────────────────────────────────────────────────────
-EXPORTS
+FINAL INSTRUCTION
 ────────────────────────────────────────────────────
-${hasTXT ? `EXPORT TXT:
-  - Button: "⬇ Export TXT"
-  - Generates a plain-text summary of all outputs.
-  - Uses Blob + object URL download. Filename: "${p.slug}-export.txt"` : ''}
-${hasCSV ? `EXPORT CSV:
-  - Button: "⬇ Export CSV"
-  - Generates RFC 4180 compliant CSV of tabular data.
-  - Uses Blob + object URL download. Filename: "${p.slug}-data.csv"
-  - Properly escape commas and quotes in cell values.` : ''}
-${!hasTXT && !hasCSV ? '  No export functionality required.' : ''}
-${hasCharts ? `\nCHARTS (PURE HTML/CSS):
-  - Generate bar charts and/or line charts using only HTML + CSS.
-  - NO canvas, NO SVG libraries, NO chart.js.
-  - Bar chart: use <div> elements with percentage-based height/width and CSS transitions.
-  - Line chart: approximate using inline-flex divs with relative positioning.
-  - Include value labels on each bar/point.
-  - Charts must be responsive (use % widths).` : ''}
-${hasPivot ? `\nPIVOT-LIKE SUMMARY TABLE:
-  - Generate a grouped summary table below main results.
-  - Group data by a key field (category, month, type, etc — use the most logical grouping).
-  - Show count, total, and percentage columns.
-  - Table must be horizontally scrollable on mobile (overflow-x: auto wrapper).
-  - Style: dark header row, alternating row shading.` : ''}
-${hasOffline ? `\nOFFLINE-READY NOTE:
-  - Do NOT include a service worker file.
-  - Add a visible offline notice at the top of the page (dismissable):
-    "This tool works offline once loaded. No internet required after first load."
-  - Use a small banner with a wifi-off icon (text: 📡) and a dismiss ✕ button.
-  - Store dismissal in sessionStorage.` : ''}
-
-────────────────────────────────────────────────────
-OUTPUT
-────────────────────────────────────────────────────
-Return ONE complete working HTML file only.
-- No markdown code fences.
-- No \`\`\`html\`\`\` wrapper.
-- File must open in a browser and work immediately.
-- Self-contained: all CSS in <style>, all JS in <script>.
-- No external dependencies of any kind.`;
-
+Return exactly one complete HTML file for "${p.name}".
+Nothing before it. Nothing after it.`;
   return prompt;
 }
 
-function featLabel(k){
-  var map={
-    localStorage:'localStorage persistence (save/load from browser storage)',
-    exportTXT:'Export to TXT file',
-    exportCSV:'Export to CSV file',
-    charts:'Pure HTML/CSS charts (no canvas, no libraries)',
-    pivotTable:'Pivot-like grouped summary table',
-    filters:'Filter chips / slicer-style toggle UI',
-    commandOrb:'Command orb input (keyword routing)',
-    a11y:'Clickable card accessibility patch (role=button, tabindex, Enter/Space)',
-    offline:'Offline-ready notice banner (no service worker)'
-  };
-  return map[k] || k;
+function featLabel(key){
+  return ({
+    localStorage:'Save state with localStorage',
+    exportTXT:'Export TXT',
+    exportCSV:'Export CSV',
+    charts:'Charts / visuals',
+    pivotTable:'Pivot summary table',
+    filters:'Filters / sorting',
+    commandOrb:'Command orb / quick actions',
+    a11y:'Strong accessibility',
+    offline:'Offline-friendly'
+  })[key] || key;
 }
 
 function styleGuide(style, tone){
-  var guides = {
-    'ViaDecide Dark': `Use the ViaDecide dark system:
-  CSS vars: --bg:#0d0f14; --bg2:#13161e; --bg3:#1a1e2a; --accent:#7ee8fa; --text:#d4ddf7; --text2:#7c89a8;
-  Font: 'Segoe UI', system-ui. Border-radius: 8px/12px. Border color: #252a38.
-  Accent glow: box-shadow: 0 0 12px rgba(126,232,250,0.2);`,
-    'Retro Terminal': `Green-on-black terminal aesthetic.
-  CSS vars: --bg:#050a05; --accent:#39ff14; --text:#b0ffb0;
-  Font: 'Courier New', monospace. Use scanline effect via repeating-linear-gradient overlay.
-  Borders: 1px solid #39ff14 with low opacity on containers.`,
-    'Minimal Spreadsheet': `Clean, data-dense spreadsheet style. White/light grey background.
-  CSS vars: --bg:#ffffff; --bg2:#f5f5f5; --accent:#1a56db; --text:#1a1a1a;
-  Font: 'Arial', sans-serif. Use table-style grids, thin 1px borders, compact padding.`,
-    'Neon': `Electric dark theme with vivid neon accents.
-  CSS vars: --bg:#060010; --accent:#ff00ff; --accent2:#00ffff; --text:#f0e0ff;
-  Font: 'Courier New'. Use text-shadow neon glow on headings and key values.`,
-    'Bharat Ledger': `Warm saffron/ivory ledger style inspired by Indian accounting books.
-  CSS vars: --bg:#fdf6e3; --accent:#c0510a; --text:#2d1b00; --border:#d4a76a;
-  Font: Georgia, serif. Use bold saffron headers, warm beige containers.`
+  var map = {
+    'ViaDecide Dark Glass':
+`- Dark, layered interface with subtle glass panels.
+- Accent colors: cyan / blue / violet.
+- Sharp information density, premium operator feel.
+- Rounded corners, thin borders, restrained glow.
+- Tone should feel ${tone.toLowerCase()} without becoming noisy.`,
+    'Minimal Dashboard':
+`- Clean dashboard layout, low visual noise.
+- Neutral surfaces, strong spacing rhythm.
+- Prioritize usability and scannability.`,
+    'Retro Console':
+`- Console-inspired UI with monospace accents.
+- High-contrast panels, terminal cues, but still polished.`,
+    'Soft Cards':
+`- Friendly card-based layout with soft contrast and approachable spacing.`,
+    'Dense Operator UI':
+`- High information density, compact panels, efficient controls for expert use.`
   };
-  var toneNote = {
-    strict: 'Tone is strict/utilitarian. Labels are short. No unnecessary flourish.',
-    friendly: 'Tone is warm and accessible. Use helpful placeholder text and micro-copy.',
-    premium: 'Tone is premium. Use refined typography spacing. Output feels like a polished product.',
-    playful: 'Tone is playful. Use emoji labels, fun copy, lively animations.'
-  };
-  return (guides[style]||guides['ViaDecide Dark'])+'\n\n  Tone note: '+(toneNote[tone]||'');
+  return map[style] || map['Minimal Dashboard'];
 }
 
-/* ──────────────────────────────────────────
-   BUILD OUTPUT B: WEBSITE SNIPPET
-────────────────────────────────────────── */
+function buildMasterPrompt(p){
+  var baseSpec = buildPromptA(p);
+  return `You are running a coordinated 3-agent software workflow inside one thread.
+
+AGENT TOPOLOGY
+Agent 1 → Prompt Engineer
+Agent 2 → Code Generator
+Agent 3 → Code Reviewer
+
+MISSION
+Transform the product brief below into production-grade code with an explicit internal handoff cycle.
+Do the work in one response, but preserve the agent boundaries in your reasoning and output structure.
+
+OPERATING RULES
+1. Agent 1 must convert the brief into an execution-ready implementation spec.
+2. Agent 2 must generate the actual code only after Agent 1 finalizes the spec.
+3. Agent 3 must review Agent 2's output for correctness, completeness, UX consistency, accessibility, and edge cases.
+4. If Agent 3 finds issues, Agent 2 must silently fix them before producing the final answer.
+5. Final answer must contain only the finished artifact requested by the brief. No hidden TODOs. No partial snippets.
+
+RESPONSE STRUCTURE
+Phase A — Agent 1 Spec
+- Restate the goal
+- Extract constraints
+- Define UI, data flow, interactions, edge cases, and acceptance criteria
+
+Phase B — Agent 2 Build
+- Produce the complete implementation
+- Keep everything self-contained
+- Preserve naming consistency with the brief
+
+Phase C — Agent 3 Review
+- Validate structure, interactions, accessibility, mobile behavior, and output correctness
+- Patch defects before final delivery
+- Summarize what was fixed in 3-8 short bullets
+
+FINAL DELIVERY RULE
+After the review loop, output the final artifact only.
+
+SHARED PRODUCT BRIEF
+${baseSpec}`;
+}
+
+function buildAgentPack(p){
+  var baseSpec = buildPromptA(p);
+  var handoff = [
+    'AGENT 1 — PROMPT ENGINEER',
+    'Goal: translate the brief into a precise build spec for Agent 2.',
+    'Deliverables:',
+    '- problem statement',
+    '- UI map',
+    '- state + data model',
+    '- interaction flow',
+    '- acceptance checklist',
+    '- explicit implementation instructions',
+    '',
+    'AGENT 2 — CODE GENERATOR',
+    'Goal: implement the build spec exactly.',
+    'Deliverables:',
+    '- complete runnable code',
+    '- no placeholders',
+    '- no missing handlers',
+    '- preserve visual system and naming',
+    '- satisfy all acceptance criteria',
+    '',
+    'AGENT 3 — CODE REVIEWER',
+    'Goal: review Agent 2 output before release.',
+    'Review checklist:',
+    '- completeness',
+    '- runtime safety',
+    '- responsive behavior',
+    '- accessibility',
+    '- UX consistency',
+    '- export/local storage/chart features if requested',
+    '- edge cases and empty states',
+    '',
+    'MERGE RULE',
+    'If Agent 3 finds defects, revise the code before final delivery.',
+    'Return the corrected final code after review.',
+    '',
+    'SHARED PRODUCT BRIEF',
+    baseSpec
+  ];
+  return handoff.join('\n');
+}
+
 function buildSnippetB(p){
   var name      = p.name || 'Unnamed Tool';
   var slug      = p.slug || slugify(name);
@@ -1101,84 +1168,94 @@ ${catStyleNote(cat, name)}
 }
 
 function catCSSClass(cat){
-  var map={
-    finance:'tc-finance',
-    tools:'tc-tools',
-    commerce:'tc-commerce',
-    games:'tc-games',
-    services:'tc-services',
-    store:'tc-store',
-    blog:'tc-blog'
-  };
-  return map[cat]||'tc-tools';
+  return ({
+    tools:'cat-tools',
+    education:'cat-edu',
+    simulations:'cat-sim',
+    business:'cat-biz',
+    ai:'cat-ai',
+    experiments:'cat-exp'
+  })[cat] || 'cat-tools';
 }
 
 function catInlineStyle(cat){
-  var styles={
-    finance:'background: linear-gradient(135deg, #0d1f2d 0%, #1a3040 50%, #0f2535 100%); border-color: #2a5070;',
-    tools:'background: linear-gradient(135deg, #0f1420 0%, #1a1e2a 100%); border-color: #252a38;',
-    commerce:'background: linear-gradient(135deg, #1a1200 0%, #2a1f00 100%); border-color: #4a3500;',
-    games:'background: linear-gradient(135deg, #120a1f 0%, #1e1030 100%); border-color: #3a1f5a;',
-    services:'background: linear-gradient(135deg, #0a1a0f 0%, #0f2515 100%); border-color: #1f4a2a;',
-    store:'',
-    blog:''
-  };
-  return styles[cat]||'';
+  return ({
+    ai:'box-shadow:0 0 0 1px rgba(126,232,250,.2) inset, 0 0 30px rgba(126,232,250,.06);',
+    simulations:'background:linear-gradient(180deg, rgba(167,139,250,.08), rgba(13,15,20,0));',
+    business:'background:linear-gradient(180deg, rgba(74,222,128,.06), rgba(13,15,20,0));'
+  })[cat] || '';
 }
 
 function statusBadgeHTML(status){
-  return status;
+  return ({
+    Live:'<span class="badge badge-live">Live</span>',
+    Beta:'<span class="badge badge-beta">Beta</span>',
+    Coming:'<span class="badge badge-coming">Coming</span>'
+  })[status] || '<span class="badge badge-live">Live</span>';
 }
 
 function catStyleNote(cat, name){
-  if(cat==='finance'){
-    return `
-
-<!-- FINANCE STYLE NOTE ──────────────────────────────
-  Finance cards use a deep ocean blue gradient:
-    background: linear-gradient(135deg, #0d1f2d 0%, #1a3040 50%, #0f2535 100%)
-    border-color: #2a5070
-  Accent color: #5bc4f5 (light blue)
-  
-  Match existing finance tool cards for visual consistency.
-  Example reference cards: EMI Calculator, SIP Returns, etc.
-───────────────────────────────────────────────────── -->`;
-  }
-  if(cat==='tools'){
-    return `
-
-<!-- TOOLS STYLE NOTE ────────────────────────────────
-  Tools cards use the standard ViaDecide dark:
-    background: linear-gradient(135deg, #0f1420 0%, #1a1e2a 100%)
-    border-color: #252a38
-  Accent color: #7ee8fa (cyan)
-  
-  For prominent/featured tools, you may add:
-    box-shadow: 0 0 0 1px rgba(126,232,250,0.15)
-───────────────────────────────────────────────────── -->`;
-  }
-  return '';
+  var notes = {
+    tools:`<!--
+  Category note:
+  "${name}" is a standard utility/tool card.
+  Suggested placement: Tools grid / practical operators section.
+-->`,
+    education:`<!--
+  Category note:
+  "${name}" fits the Education / learning tools zone.
+  Suggested placement near StudyOS / learning infrastructure.
+-->`,
+    simulations:`<!--
+  Category note:
+  "${name}" fits the Simulations / sandbox zone.
+  Suggested placement near interactive experiments.
+-->`,
+    business:`<!--
+  Category note:
+  "${name}" fits the Business / founder tools zone.
+  Suggested placement near operator dashboards / market tools.
+-->`,
+    ai:`<!--
+  Category note:
+  "${name}" fits the AI systems / model tools zone.
+  Suggested placement near Alchemist / Prompt Alchemy style tools.
+-->`,
+    experiments:`<!--
+  Category note:
+  "${name}" fits the experimental / prototype zone.
+  Suggested placement where exploratory tools are showcased.
+-->`
+  };
+  return notes[cat] || notes.tools;
 }
 
-/* ──────────────────────────────────────────
-   COPY + DOWNLOAD
-────────────────────────────────────────── */
+/* ── Copy / Download actions ── */
 document.getElementById('copy-a').addEventListener('click',function(){
   var txt=document.getElementById('out-a').textContent;
-  navigator.clipboard.writeText(txt).then(()=>toast('📋 Output A copied!')).catch(()=>fallbackCopy(txt));
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Copied!')).catch(()=>fallbackCopy(txt));
 });
 document.getElementById('copy-b').addEventListener('click',function(){
   var txt=document.getElementById('out-b').textContent;
-  navigator.clipboard.writeText(txt).then(()=>toast('📋 Output B copied!')).catch(()=>fallbackCopy(txt));
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Copied!')).catch(()=>fallbackCopy(txt));
+});
+document.getElementById('copy-c').addEventListener('click',function(){
+  var txt=document.getElementById('out-c').textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast('📋 Copied!')).catch(()=>fallbackCopy(txt));
 });
 document.getElementById('dl-a').addEventListener('click',function(){
   var g=window._vd_gen; if(!g) return;
-  download(g.slug+'-claude-prompt.txt', g.outA);
-  toast('⬇ Downloading prompt...');
+  download(g.slug+'-3-agent-master-prompt.txt', g.outA);
+  toast('⬇ Downloading master prompt...');
 });
 document.getElementById('dl-b').addEventListener('click',function(){
   var g=window._vd_gen; if(!g) return;
-  download(g.slug+'-website-snippet.txt', g.outB);
+  download(g.slug+'-agent-handoff-pack.txt', g.outB);
+  toast('⬇ Downloading handoff pack...');
+});
+document.getElementById('dl-c').addEventListener('click',function(){
+  var g=window._vd_gen; if(!g) return;
+  download(g.slug+'-website-snippet.txt', g.outC);
   toast('⬇ Downloading snippet...');
 });
 
@@ -1246,5 +1323,6 @@ document.querySelectorAll('.btn').forEach(btn=>{
 /* ── INIT ── */
 autoLoad();
 </script>
+
 </body>
-</html>
+     </html>
